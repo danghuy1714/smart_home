@@ -20,7 +20,7 @@ def broadcast():
         Sử dụng giao thức UDP để gửi thông tin về port và ip máy chủ đến tất cả các kết nối trong  mạng cục bộ
         """
         for ip in allips:
-            print(f'sending on {ip}')
+            # print(f'sending on {ip}')
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)  # UDP
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             sock.bind((ip,0))

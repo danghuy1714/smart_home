@@ -20,6 +20,41 @@ AsyncUDP udp;
 // Trạng thái đầu ra của chân điều khiển
 int status = -1;
 
+void connect() {
+  /*
+    - Kết nối tới server
+  */
+  Serial.print("Connecting to server...");
+  while (!client.connect(host, port)) {
+    Serial.println("Connection to host failed");
+    delay(1000);
+  }
+  Serial.println("Connected to server successful");
+  client.print("0");
+}
+
+void setIp() {
+  /* 
+    - Sử dụng AsyncUDP với udp_port là port mà bản tin broadcast đã gửi lên để nhận bản tin
+    - Sử dụng phương thức onPacket để đăng ký một hàm xử lý sự kiện
+    [](AsyncUDPPacket packet): khởi tạo hàm lambda với tham số là packet dùng để xử lý các bản tin broadcast
+    - Nhận IP từ server đã gửi broadcast để dùng làm host
+  */
+  while (true) {
+    if (udp.listen(udp_port)) {
+      // Serial.println("UDP Listening on IP: " + WiFi.localIP().toString() + " Port: " + udp_port);
+      udp.onPacket([](AsyncUDPPacket packet) {
+        char *c = (char*)packet.data();
+        host = &packet.remoteIP().toString()[0];
+        // port = (uint16_t)toInt(c);
+      });
+    }
+    if (host != 0) {
+      break;
+    }
+  }
+}
+
 void setup() {
   // Thiết lập thông số của ESP32
   // Tốc độ truyền
@@ -52,37 +87,9 @@ void setup() {
   Serial.print("WiFi connected. IP address: ");
   Serial.println(WiFi.localIP());
   
-  
-  /* 
-    - Sử dụng AsyncUDP với udp_port là port mà bản tin broadcast đã gửi lên để nhận bản tin
-    - Sử dụng phương thức onPacket để đăng ký một hàm xử lý sự kiện
-    [](AsyncUDPPacket packet): khởi tạo hàm lambda với tham số là packet dùng để xử lý các bản tin broadcast
-    - Nhận IP từ server đã gửi broadcast để dùng làm host
-  */
-  while (true) {
-    if (udp.listen(udp_port)) {
-      Serial.println("UDP Listening on IP: " + WiFi.localIP().toString() + " Port: " + udp_port);
-      udp.onPacket([](AsyncUDPPacket packet) {
-        char *c = (char*)packet.data();
-        host = &packet.remoteIP().toString()[0];
-        // port = (uint16_t)toInt(c);
-      });
-    }
-    if (host != 0) {
-      break;
-    }
-  }
-  
-  /*
-    - Kết nối tới server
-  */
-  Serial.print("Connecting to server...");
-  while (!client.connect(host, port)) {
-    Serial.println("Connection to host failed");
-    delay(1000);
-  }
-  Serial.println("Connected to server successful");
-  client.print("Hello from ESP32");
+  setIp();
+
+  connect();
 }
 
 void loop() {
@@ -111,9 +118,8 @@ void loop() {
     }
 
   }
-
   // Ngắt kết nối tới server
-  Serial.println("Disconnecting....");
-  client.stop();
+  // Serial.println("Disconnecting....");
+  // client.stop();
   delay(3000);
 }

@@ -30,22 +30,7 @@ def speech():
             text = recognizer.recognize_google(audio, language='vi-VN')
             print("Đoạn văn bản đã nhận dạng: " + text)
             response = wit.message(audio)
-            print("")
-            print(response)
-            print("")
-            max_confi = 0
-            extracted_text = ""
-            for i in range(len(response["entities"]['light:light_off'])):
-                cf1 = response["entities"]['light:light_off'][i]["confidence"]
-                if cf1 > max_confi:
-                    max_confi = cf1
-                    extracted_text = response["entities"]['light:light_off'][i]["role"]
-            for i in range(len(response["entities"]['light:light_on'])):
-                cf1 = response["entities"]['light:light_on'][i]["confidence"]
-                if cf1 > max_confi:
-                    max_confi = cf1
-                    extracted_text = response["entities"]['light:light_on'][i]["role"]
-
+            extracted_text = response['text']
             print("Đoạn văn bản đã trích xuất từ PyWit: " + extracted_text)
         except sr.UnknownValueError:
             print("Không thể nhận dạng giọng nói.")
@@ -53,4 +38,3 @@ def speech():
         except sr.RequestError as e:
             print("Lỗi trong quá trình nhận dạng; {0}".format(e))
     return text
-speech()
