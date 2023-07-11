@@ -7,49 +7,12 @@
 """
 import socket
 import config
-from network import Speech, SendESP32
-import threading
-import speech
+from network import  SendESP32, Speech
+import network
 
 # Đọc IP server
 HOST = socket.gethostbyname(socket.gethostname())
 
-# Tạo các list chứa các thiết bị đã được đăng ký
-devices = {"light" : []}
-micro = []
-
-"""
-    Tạo luồng nhận dữ liệu từ micro, mỗi micro sử dụng một luồng
-    
-    - Mỗi luồng micro khi nhận được dữ liệu, sẽ nhận dạng rồi đưa ra quyết định
-"""
-class Receive(threading.Thread):
-    def __init__(self, client_socket, client_address):
-        super().__init__()
-        
-        # Gán các thông số về socket cho luồng
-        self.client_socket = client_socket
-        self.client_address = client_address
-
-        # Tạo ra luồng nhận dữ liệu từ micro
-        self.receive = Speech(client_socket, client_address)
-        self.receive.start()
-    def run(self):
-        pass
-        # while True:
-        #     # if self.receive.complete == 1:
-        #     if True:
-        #         # self.audio_path = self.receive.audio_path
-        #         # device, text = speech.speech(self.audio_path)
-        #         device, text = speech.speech()
-        #         # self.receive.complete = 0
-        #         n = len(devices["light"])
-        #         device = int(device)
-        #         if device >= 0 and device < n:
-        #             if text == '1' or text == '0':
-        #                 devices['light'][device].update(text)
-        #             else:
-                        # print("Khong co trang thai nay")
 
 def start_server():
     # Tạo socket và liên kết nó với địa chỉ và cổng
@@ -65,11 +28,11 @@ def start_server():
         print(f"Connected with {client_address}")
         data = client_socket.recv(1024).decode()
         print(f"Received data: {data}")
-        if data == "device":
-            t = SendESP32(client_socket, client_address)
-            t.start()
-            devices["light"].append(t)
-        elif data == "micro":
-            r = Receive(client_socket, client_address)
+
+        if data == "micro":
+            r = Speech(client_socket, client_address, data)
             r.start()
-            micro.append(r)
+            network.micro.append(r)
+        else:
+            t = SendESP32(client_socket, client_address)
+            network.devices["light"].append(t)

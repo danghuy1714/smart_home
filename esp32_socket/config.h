@@ -5,8 +5,8 @@
   Nhận dữ liệu từ broadcast tại cổng 5005, sử dụng giao thức udp
   Sử dụng giao thức TCP/IP để kết nối tới server
 */
-extern char *ssid = "VAN";
-extern char *password = "0912549900";
+extern char *ssid = "KIEN2";
+extern char *password = "0947091818";
 // const char* ssid = "Galaxy A23";
 // const char* password = "123456789";
 // const char* ssid = "SET407-2.4G";

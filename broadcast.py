@@ -27,4 +27,4 @@ def broadcast():
             sock.sendto(msg, ("255.255.255.255", config.PORT_BROADCAST))
             sock.close()
 
-        sleep(2)
+        sleep(5)

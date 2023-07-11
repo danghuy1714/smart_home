@@ -30,7 +30,7 @@ void connecting() {
     delay(500);
   }
   Serial.println("Connected to server successful");
-  client.print("0");
+  client.print("đèn 1");
 }
 
 void setIp() {
@@ -46,7 +46,6 @@ void setIp() {
       udp.onPacket([](AsyncUDPPacket packet) {
         char *c = (char*)packet.data();
         host = &packet.remoteIP().toString()[0];
-        // port = (uint16_t)toInt(c);
       });
     }
     if (host != 0) {
