@@ -1,13 +1,8 @@
-/*
-  Module micro: thiết lập các kết nối và truyền dữ liêu từ INMP441 tới ESP32 và tới server
-*/
-
 #include <driver/i2s.h>
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <AsyncUDP.h>
-#include "config.h"
-
+#include "D:\Source\Python\vxl\esp32_socket\config.h"
 
 // Cấu hình cách chân của imnp441
 #define I2S_WS GPIO_NUM_25
@@ -18,108 +13,111 @@
 // Cấu hình giao thức I2S
 #define I2S_SAMPLE_RATE 16000
 #define I2S_SAMPLE_BITS 16
+#define buffer_count 64
+#define buffer_len 1024
 
 // thiết lập cổng i2s
 #define I2S_PORT I2S_NUM_0
 
-// IP server
-char *host = 0;
-
-/*
-  Khởi tạo một biến client từ Class WiFiClient để truyền nhận dữ liệu dùng giao thức TCP/IP
-  Sử dụng thư viện AsyncUDP để nhận dữ liệu từ broadcast tại mạng cục bộ
-*/
-WiFiClient client;
-AsyncUDP udp;
 
 // Tạo mảng để ghi dữ liệu bit(âm thanh) thừ INMP441
 #define bufferLen 16 * 1024
 byte sBuffer[bufferLen];
 
+// IP server
+char *host = 0;
+
+// Chân đầu ra sử dụng là GPIO2
+const int IN_PIN = GPIO_NUM_2;
+
+hw_timer_t * timer = NULL;
+
+int status = 0;
+
+WiFiClient client;
+AsyncUDP udp;
+
+
 void i2s_install();
 void i2s_setpin();
+void connectWifi();
+void connectPort();
+void setIp();
+void checkStatus();
+// void checkStatus();
+void sendAudio();
+void updateStatus();
 
 
 void setup() {
-
-   /* 
-    Thiết lập kết nối tới wifi với tên(ssid) và mật khẩu (password)
-  */
   // Set up Serial Monitor
   Serial.begin(115200);
 
-
-  // Kết nối tới wifi
-  WiFi.begin(ssid, password);
-
-  /*
-    Kiểm tra trạng thái kết nối
-    Nếu WiFi.status() = WL_CONNECTED thì đã có kết nối tới WiFi
-    WL_CONNECTED là hằng số có giá trị là 1
-    Nếu WiFi.status() = 0 thì chưa có kết nối tới wifi
-  */
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-  }
-
-  // Hiển thị các thông số IP của ESP32 tại mạng cục bộ
-  Serial.println();
-  Serial.print("WiFi connected. IP address: ");
-  Serial.println(WiFi.localIP());
-
-   /* 
-    - Sử dụng AsyncUDP với udp_port là port mà bản tin broadcast đã gửi lên để nhận bản tin
-    - Sử dụng phương thức onPacket để đăng ký một hàm xử lý sự kiện
-    [](AsyncUDPPacket packet): khởi tạo hàm lambda với tham số là packet dùng để xử lý các bản tin broadcast
-    - Nhận IP từ server đã gửi broadcast để dùng làm host
-  */
-  while (true) {
-    if (udp.listen(udp_port)) {
-      // Serial.println("UDP Listening on IP: " + WiFi.localIP().toString() + " Port: " + udp_port);
-      udp.onPacket([](AsyncUDPPacket packet) {
-        char *c = (char*)packet.data();
-        host = &packet.remoteIP().toString()[0];
-        // port = (uint16_t)toInt(c);
-      });
-    }
-    if (host != 0) {
-      break;
-    }
-  }
-  
-  /*
-    - Kết nối tới server
-  */
-  Serial.print("Connecting to server...");
-  while (!client.connect(host, port)) {
-    Serial.println("Connection to host failed");
-    delay(1000);
-  }
-  Serial.println("Connected to server successful");
-  // Xác định tên thiết bị
-  client.print("micro");
-
-  delay(1000);
+  // Chọn chân điều khiển đầu ra
+  pinMode(IN_PIN, OUTPUT);
+  digitalWrite(IN_PIN, HIGH);
+  connectWifi();
+  setIp();
+  connectPort();
 
   // Thiết lập I2S
   i2s_install();
   i2s_setpin();
   i2s_start(I2S_PORT);
 
-
-  delay(500);
+}
+void loop() {
+  sendAudio();
+  checkStatus();
 }
 
-void loop() {
+void connectWifi() {
+    Serial.print("Connecting to Wi-Fi...");
+    WiFi.begin(ssid, password);
 
-  size_t bytesIn = 0;
-  esp_err_t result = i2s_read(I2S_PORT, &sBuffer, bufferLen, &bytesIn, portMAX_DELAY);
+    /*
+        Kiểm tra trạng thái kết nối
+        Nếu WiFi.status() = WL_CONNECTED thì đã có kết nối tới WiFi
+        WL_CONNECTED là hằng số có giá trị là 1
+        Nếu WiFi.status() = 0 thì chưa có kết nối tới wifi
+    */
+    while (WiFi.status() != WL_CONNECTED) {
+        Serial.print(".");
+    }
 
-  if (result == ESP_OK && bytesIn > 0) {
-    // Send data over the socket
-    client.write((const byte*)sBuffer, bytesIn);
-    client.flush();
-    Serial.println("Complete send");
+    // Hiển thị các thông số IP của ESP32 tại mạng cục bộ
+    Serial.println();
+    Serial.print("WiFi connected. IP address: ");
+    Serial.println(WiFi.localIP());
+}
+
+void connectPort() {
+    /*
+    - Kết nối tới server
+    */
+    Serial.print("Connecting to server...");
+    
+    while (!client.connect(host, port)) {
+        Serial.println(host);
+        Serial.println(port);
+        Serial.println("Connection to host failed");
+    }
+    Serial.println("Connected to server successful");
+    client.print("đèn-micro1");
+}
+
+void setIp() {
+    while (true) {
+    if (udp.listen(udp_port)) {
+      // Serial.println("UDP Listening on IP: " + WiFi.localIP().toString() + " Port: " + udp_port);
+      udp.onPacket([](AsyncUDPPacket packet) {
+        char *c = (char*)packet.data();
+        host = &packet.remoteIP().toString()[0];
+      });
+    }
+    if (host != 0) {
+      break;
+    }
   }
 }
 
@@ -160,8 +158,8 @@ void i2s_install() {
       được sử dụng cho việc truyền và nhận dữ liệu âm thanh. 
       Trong đoạn code, có 64 bộ đệm với độ dài 1024 bytes cho mỗi bộ đệm.
     */
-    .dma_buf_count = 64,
-    .dma_buf_len = 1024,
+    .dma_buf_count = buffer_count,
+    .dma_buf_len = buffer_len,
     /*
       .use_apll: Cờ chỉ định việc sử dụng APLL (Audio PLL) cho đồng bộ hóa âm thanh. 
       Trong đoạn code, nó được đặt thành 1 để sử dụng APLL.
@@ -184,3 +182,48 @@ void i2s_setpin() {
   i2s_set_pin(I2S_PORT, &pin_config);
 }
 
+void checkStatus() {
+  // while (client.connected()) {
+
+    // Kiểm ra có tin mới gửi từ server không
+    if (client.available()) {
+      // Đọc dữ liệu từ server
+      String data = client.readStringUntil('\n');
+      Serial.print("Received data: ");
+      Serial.println(data);
+
+      /*
+        Thay đổi trạng thái của chân đầu ra
+      */
+      if (data[0] == '1') {
+        status = 0;
+      } else {
+        // digitalWrite(IN_PIN, LOW);
+        status = 1;
+      }
+    }
+  // }
+  updateStatus();
+}
+
+void sendAudio() {
+  // while (true) {
+    size_t bytesIn = 0;
+    esp_err_t result = i2s_read(I2S_PORT, &sBuffer, bufferLen, &bytesIn, portMAX_DELAY);
+
+    if (result == ESP_OK && bytesIn > 0) {
+      // Send data over the socket
+      client.write((const byte*)sBuffer, bytesIn);
+      client.flush();
+      Serial.println("Complete send");
+    }
+  // }
+}
+
+void updateStatus() {
+  if (status == 0) {
+    digitalWrite(IN_PIN, LOW);
+  } else {
+    digitalWrite(IN_PIN, HIGH);
+  }
+}
