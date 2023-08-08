@@ -55,7 +55,7 @@ void setup() {
 
   // Chọn chân điều khiển đầu ra
   pinMode(IN_PIN, OUTPUT);
-  digitalWrite(IN_PIN, HIGH);
+  digitalWrite(IN_PIN, LOW);
   connectWifi();
   setIp();
   connectPort();
@@ -67,7 +67,10 @@ void setup() {
 
 }
 void loop() {
-  sendAudio();
+  int i = 0;
+  for (i = 0; i < 15; ++i) {
+    sendAudio();
+  }
   checkStatus();
 }
 
@@ -183,8 +186,8 @@ void i2s_setpin() {
 }
 
 void checkStatus() {
-  // while (client.connected()) {
-
+  int i = 0;
+  while (client.connected() && i < 300000 ) {
     // Kiểm ra có tin mới gửi từ server không
     if (client.available()) {
       // Đọc dữ liệu từ server
@@ -196,13 +199,15 @@ void checkStatus() {
         Thay đổi trạng thái của chân đầu ra
       */
       if (data[0] == '1') {
-        status = 0;
+        status = 1;
       } else {
         // digitalWrite(IN_PIN, LOW);
-        status = 1;
+        status = 0;
       }
+      break;
     }
-  // }
+    ++i;
+  }
   updateStatus();
 }
 
