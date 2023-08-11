@@ -2,7 +2,7 @@
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <AsyncUDP.h>
-#include "D:\Source\Python\vxl\esp32_socket\config.h"
+#include "config.h"
 
 // Cấu hình cách chân của imnp441
 #define I2S_WS GPIO_NUM_25
@@ -11,7 +11,7 @@
 
 
 // Cấu hình giao thức I2S
-#define I2S_SAMPLE_RATE 16000
+#define I2S_SAMPLE_RATE 44100
 #define I2S_SAMPLE_BITS 16
 #define buffer_count 64
 #define buffer_len 1024
@@ -66,11 +66,27 @@ void setup() {
   i2s_start(I2S_PORT);
 
 }
+// void loop() {
+//   int i = 0;
+//   int tmp = 0;
+//   for (i = 0; i < 19; ++i) {
+//     sendAudio();
+//     checkStatus();
+//   }
+
+//   for (i = 0; i < 300000; ++i) {
+//     tmp = status;
+//     checkStatus();
+//     if (status != tmp) {
+//       break;
+//     }
+//   }
+  
+// }
+
 void loop() {
-  int i = 0;
-  for (i = 0; i < 15; ++i) {
-    sendAudio();
-  }
+  sendAudio();
+  
   checkStatus();
 }
 
@@ -185,15 +201,35 @@ void i2s_setpin() {
   i2s_set_pin(I2S_PORT, &pin_config);
 }
 
+// void checkStatus() {
+//     // Kiểm ra có tin mới gửi từ server không
+//     if (client.available()) {
+//       // Đọc dữ liệu từ server
+//       String data = client.readStringUntil('\n');
+//       Serial.print("Received data: ");
+//       Serial.println(data);
+
+//       /*
+//         Thay đổi trạng thái của chân đầu ra
+//       */
+//       if (data[0] == '1') {
+//         status = 1;
+//       } else {
+//         // digitalWrite(IN_PIN, LOW);
+//         status = 0;
+//       }
+//     }
+//   updateStatus();
+// }
 void checkStatus() {
   int i = 0;
-  while (client.connected() && i < 300000 ) {
+  while (i < 2000) {
     // Kiểm ra có tin mới gửi từ server không
     if (client.available()) {
       // Đọc dữ liệu từ server
       String data = client.readStringUntil('\n');
       Serial.print("Received data: ");
-      Serial.println(data);
+      Serial.println(data); 
 
       /*
         Thay đổi trạng thái của chân đầu ra
