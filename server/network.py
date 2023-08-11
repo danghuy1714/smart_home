@@ -43,9 +43,10 @@ class Speech(MultiSocket, threading.Thread):
         self.audio_path = name + ".wav"
     def run(self):
         while True:
-            data = self.client_socket.recv(1024)
+            # data = self.client_socket.recv(1024)
+            data = self.client_socket.recv(65536)
+
             if data:
-                # Mở tệp âm thanh ở chế độ đọc
                 frames = 0
                 try:
                     with wave.open(self.audio_path, 'rb') as wav_file:
@@ -56,14 +57,19 @@ class Speech(MultiSocket, threading.Thread):
                     print(f"Tao file: {self.audio_path}")
 
                 try:
-                    if os.path.getsize(self.audio_path) > 110000:
+                    if os.path.getsize(self.audio_path) > 300000:
                         frames = 0
                         control = speech.speech(self.audio_path)
                         self.audio = control
-                        if "bật đèn một" in  self.audio.lower():
-                            devices["light"][0].send(1)
-                        if "tắt đèn một" in self.audio.lower():
-                            devices["light"][0].send(0)
+                        if "bật tình yêu lên" in  self.audio.lower():
+                            for i in range(10000):
+                                devices["light"][0].send(1)
+                        elif "tắt đèn đi" in self.audio.lower():
+                            for i in range(10000):
+                                devices["light"][0].send(0)
+                        else:
+                            devices["light"][0].send(5)
+
                 except:
                     pass
                 # Mở tệp âm thanh ở chế độ ghi (viết lại toàn bộ dữ liệu)
@@ -71,7 +77,7 @@ class Speech(MultiSocket, threading.Thread):
                     # Cấu hình thông số của tệp âm thanh
                     wav_file.setnchannels(1)
                     wav_file.setsampwidth(2)
-                    wav_file.setframerate(16000)
+                    wav_file.setframerate(44100)
 
 
                     # Ghi lại toàn bộ dữ liệu âm thanh đã đọc và dữ liệu mới vào cuối tệp

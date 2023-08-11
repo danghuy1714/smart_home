@@ -14,7 +14,6 @@ def broadcast():
 
     # Gửi thông tin về địa chỉ port của server
     msg = str(config.PORT_SERVER).encode()
-
     while True:
         """
         Sử dụng giao thức UDP để gửi thông tin về port và ip máy chủ đến tất cả các kết nối trong  mạng cục bộ

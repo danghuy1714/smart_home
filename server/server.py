@@ -13,7 +13,6 @@ import network
 # Đọc IP server
 HOST = socket.gethostbyname(socket.gethostname())
 
-
 def start_server():
     # Tạo socket và liên kết nó với địa chỉ và cổng
     # Tạo socket server
@@ -29,10 +28,12 @@ def start_server():
         data = client_socket.recv(1024).decode()
         print(f"Received data: {data}")
 
-        if data == "micro":
+        data1, data2 = data.split('-')
+
+        if data2:
             r = Speech(client_socket, client_address, data)
             r.start()
             network.micro.append(r)
-        else:
+        if data1:
             t = SendESP32(client_socket, client_address)
             network.devices["light"].append(t)
